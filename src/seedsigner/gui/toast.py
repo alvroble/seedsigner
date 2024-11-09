@@ -31,8 +31,6 @@ class ToastOverlay(BaseComponent):
                 icon_color=self.color
             )
             icon_delta_x = self.icon.width + self.icon.screen_x
-            self.icon.screen_y = self.canvas_height - self.height + int((self.height - self.icon.height)/2)
-
         
         self.label = TextArea(
             image_draw=self.image_draw,
@@ -52,9 +50,12 @@ class ToastOverlay(BaseComponent):
         if self.label.height > GUIConstants.ICON_FONT_SIZE:
             self.height = self.label.height + GUIConstants.EDGE_PADDING * 2
 
-        # Vertically center the message within the toast (for single- or multi-line
+        # Vertically center the message and icon within the toast (for single- or multi-line
         # messages).
         self.label.screen_y = self.canvas_height - self.height + self.outline_thickness + int((self.height - 2*self.outline_thickness - self.label.height)/2)
+        
+        if self.icon_name:
+            self.icon.screen_y = self.canvas_height - self.height + int((self.height - self.icon.height)/2)
 
 
     def render(self):
