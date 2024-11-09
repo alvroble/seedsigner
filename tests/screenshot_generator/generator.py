@@ -28,6 +28,7 @@ sys.modules['seedsigner.hardware.microsd'] = MagicMock()
 from seedsigner.controller import Controller
 from seedsigner.gui.renderer import Renderer
 from seedsigner.gui.toast import BaseToastOverlayManagerThread, RemoveSDCardToastManagerThread, SDCardStateChangeToastManagerThread
+from seedsigner.gui.toast import DefaultToast, InfoToast, SuccessToast, WarningToast, ErrorToast, DireWarningToast
 from seedsigner.hardware.microsd import MicroSD
 from seedsigner.models.decode_qr import DecodeQR
 from seedsigner.models.qr_type import QRType
@@ -165,6 +166,12 @@ def test_generate_screenshots(target_locale):
             (MainMenuView, {}, 'MainMenuView_SDCardStateChangeToast_removed', SDCardStateChangeToastManagerThread(action=MicroSD.ACTION__REMOVED)),
             (MainMenuView, {}, 'MainMenuView_SDCardStateChangeToast_inserted', SDCardStateChangeToastManagerThread(action=MicroSD.ACTION__INSERTED)),
             (MainMenuView, {}, 'MainMenuView_RemoveSDCardToast', RemoveSDCardToastManagerThread(activation_delay=0)),
+            (MainMenuView, {}, 'MainMenuView_DefaultToast', DefaultToast("This is a default text toast!")),
+            (MainMenuView, {}, 'MainMenuView_InfoToast', InfoToast("This is an info toast!")),
+            (MainMenuView, {}, 'MainMenuView_SuccessToast', SuccessToast("This is a success toast!")),
+            (MainMenuView, {}, 'MainMenuView_WarningToast', WarningToast("This is a warning toast!")),
+            (MainMenuView, {}, 'MainMenuView_DireWarningToast', DireWarningToast("This is a dire warning toast!")),
+            (MainMenuView, {}, 'MainMenuView_ErrorToast', ErrorToast("This is an error toast!")),
             PowerOptionsView,
             RestartView,
             PowerOffView,
