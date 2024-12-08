@@ -1576,3 +1576,213 @@ class SeedSignMessageConfirmAddressScreen(ButtonListScreen):
             screen_y=derivation_path_display.screen_y + derivation_path_display.height + 2*GUIConstants.COMPONENT_PADDING,
         )
         self.components.append(address_display)
+
+
+@dataclass
+class NumericEntryScreen(BaseTopNavScreen):
+    title: str = "SLIP-39 Threshold"
+    entered_number: str = ""
+
+    def __post_init__(self):
+        super().__post_init__()
+
+        keys_number = "0123456789"
+
+        # Set up the keyboard params
+        self.right_panel_buttons_width = 56
+
+        text_entry_display_y = self.top_nav.height
+        text_entry_display_height = 30
+
+        keyboard_start_y = text_entry_display_y + text_entry_display_height + GUIConstants.COMPONENT_PADDING
+        
+        self.keyboard_digits = Keyboard(
+            draw=self.renderer.draw,
+            charset=keys_number,
+            rows=3,
+            cols=5,
+            rect=(
+                GUIConstants.COMPONENT_PADDING,
+                keyboard_start_y,
+                self.canvas_width - GUIConstants.COMPONENT_PADDING - self.right_panel_buttons_width,
+                self.canvas_height - GUIConstants.EDGE_PADDING
+            ),
+            additional_keys=[
+                Keyboard.KEY_CURSOR_LEFT,
+                Keyboard.KEY_CURSOR_RIGHT,
+                Keyboard.KEY_BACKSPACE
+            ],
+            auto_wrap=[Keyboard.WRAP_LEFT, Keyboard.WRAP_RIGHT]
+        )
+
+        self.text_entry_display = TextEntryDisplay(
+            canvas=self.renderer.canvas,
+            rect=(
+                GUIConstants.EDGE_PADDING,
+                text_entry_display_y,
+                self.canvas_width - self.right_panel_buttons_width,
+                text_entry_display_y + text_entry_display_height
+            ),
+            cursor_mode=TextEntryDisplay.CURSOR_MODE__BAR,
+            is_centered=False,
+            cur_text=''.join(self.entered_number)
+        )
+
+        # Nudge the buttons off the right edge w/padding
+        hw_button_x = self.canvas_width - self.right_panel_buttons_width + GUIConstants.COMPONENT_PADDING
+
+        # Calc center button position first
+        hw_button_y = int((self.canvas_height - GUIConstants.BUTTON_HEIGHT)/2)
+
+        self.hw_button3 = IconButton(
+            icon_name=SeedSignerIconConstants.CHECK,
+            icon_color=GUIConstants.SUCCESS_COLOR,
+            width=self.right_panel_buttons_width,
+            screen_x=hw_button_x,
+            screen_y=hw_button_y + 3*GUIConstants.COMPONENT_PADDING + GUIConstants.BUTTON_HEIGHT,
+        )
+    
+
+    def _render(self):
+        super()._render()
+
+        self.text_entry_display.render()
+        self.hw_button3.render()
+        self.keyboard_digits.render_keys()
+
+        self.renderer.show_image()
+    
+    def _run(self):
+        cursor_position = len(self.entered_number)
+
+        cur_keyboard = self.keyboard_digits
+
+        # Start the interactive update loop
+        while True:
+            input = self.hw_inputs.wait_for(
+                HardwareButtonsConstants.ALL_KEYS,
+                check_release=True,
+                release_keys=[HardwareButtonsConstants.KEY_PRESS, HardwareButtonsConstants.KEY1, HardwareButtonsConstants.KEY2, HardwareButtonsConstants.KEY3]
+            )
+
+            keyboard_swap = False
+
+            # Check our two possible exit conditions
+            # TODO: note the unusual return value, consider refactoring to a Response object in the future
+            if input == HardwareButtonsConstants.KEY3:
+                # Save!
+                # First light up key3
+                self.hw_button3.is_selected = True
+                self.hw_button3.render()
+                self.renderer.show_image()
+                return dict(entered_number=self.entered_number)
+
+            elif input == HardwareButtonsConstants.KEY_PRESS and self.top_nav.is_selected:
+                # Back button clicked
+                return dict(entered_number=self.entered_number, is_back_button=True)
+
+            
+
+            
+            # Process normal input
+            if input in [HardwareButtonsConstants.KEY_UP, HardwareButtonsConstants.KEY_DOWN] and self.top_nav.is_selected:
+                # We're navigating off the previous button
+                self.top_nav.is_selected = False
+                self.top_nav.render_buttons()
+
+                # Override the actual input w/an ENTER signal for the Keyboard
+                if input == HardwareButtonsConstants.KEY_DOWN:
+                    input = Keyboard.ENTER_TOP
+                else:
+                    input = Keyboard.ENTER_BOTTOM
+            elif input in [HardwareButtonsConstants.KEY_LEFT, HardwareButtonsConstants.KEY_RIGHT] and self.top_nav.is_selected:
+                # ignore
+                continue
+
+            ret_val = cur_keyboard.update_from_input(input)
+
+            # Now process the result from the keyboard
+            if ret_val in Keyboard.EXIT_DIRECTIONS:
+                self.top_nav.is_selected = True
+                self.top_nav.render_buttons()
+
+            elif ret_val in Keyboard.ADDITIONAL_KEYS and input == HardwareButtonsConstants.KEY_PRESS:
+                if ret_val == Keyboard.KEY_BACKSPACE["code"]:
+                    if cursor_position == 0:
+                        pass
+                    elif cursor_position == len(self.entered_number):
+                        self.entered_number = self.entered_number[:-1]
+                    else:
+                        self.entered_number = self.entered_number[:cursor_position - 1] + self.entered_number[cursor_position:]
+
+                    cursor_position -= 1
+
+                elif ret_val == Keyboard.KEY_CURSOR_LEFT["code"]:
+                    cursor_position -= 1
+                    if cursor_position < 0:
+                        cursor_position = 0
+
+                elif ret_val == Keyboard.KEY_CURSOR_RIGHT["code"]:
+                    cursor_position += 1
+                    if cursor_position > len(self.entered_number):
+                        cursor_position = len(self.entered_number)
+
+                elif ret_val == Keyboard.KEY_SPACE["code"]:
+                    if cursor_position == len(self.entered_number):
+                        self.entered_number += " "
+                    else:
+                        self.entered_number = self.entered_number[:cursor_position] + " " + self.entered_number[cursor_position:]
+                    cursor_position += 1
+
+                # Update the text entry display and cursor
+                self.text_entry_display.render(self.entered_number, cursor_position)
+
+            elif input == HardwareButtonsConstants.KEY_PRESS and ret_val not in Keyboard.ADDITIONAL_KEYS:
+                # User has locked in the current letter
+                if cursor_position == len(self.entered_number):
+                    self.entered_number += ret_val
+                else:
+                    self.entered_number = self.entered_number[:cursor_position] + ret_val + self.entered_number[cursor_position:]
+                cursor_position += 1
+
+                # Update the text entry display and cursor
+                self.text_entry_display.render(self.entered_number, cursor_position)
+
+            elif input in HardwareButtonsConstants.KEYS__LEFT_RIGHT_UP_DOWN or keyboard_swap:
+                # Live joystick movement; haven't locked this new letter in yet.
+                # Leave current spot blank for now. Only update the active keyboard keys
+                # when a selection has been locked in (KEY_PRESS) or removed ("del").
+                pass
+        
+
+            self.renderer.show_image()
+
+class SeedEntryShamirThresholdScreen(NumericEntryScreen):
+    title: str = "SLIP-39 Threshold"
+
+class SeedEntryShamirShareCountScreen(NumericEntryScreen):
+    title: str = "SLIP-39 Share Count"
+
+@dataclass
+class ShamirFinalizeScreen(ButtonListScreen):
+    shamir_set_index: str = None
+    title: str = "Finalize Shamir Share"
+    is_bottom_list: bool = True
+    button_data: list = None
+
+    def __post_init__(self):
+        self.show_back_button = False
+
+        super().__post_init__()
+
+        self.fingerprint_icontl = IconTextLine(
+            icon_name=SeedSignerIconConstants.FINGERPRINT,
+            icon_color=GUIConstants.INFO_COLOR,
+            icon_size=GUIConstants.ICON_FONT_SIZE + 12,
+            label_text="SLIP-39",
+            value_text=f"Shamir Share #{self.shamir_set_index}",
+            font_size=GUIConstants.BODY_FONT_SIZE + 2,
+            is_text_centered=True,
+            screen_y=self.top_nav.height + int((self.buttons[0].screen_y - self.top_nav.height) / 2) - 30
+        )
+        self.components.append(self.fingerprint_icontl)
