@@ -42,6 +42,10 @@ class QR:
                     elif qr_code_dims == 29:
                         # The registration block starts at 20,20 and is 5x5
                         starting_point = 20 + border
+
+                    elif qr_code_dims == 33:
+                        # The registration block starts at 24,24 and is 5x5
+                        starting_point = 24 + border
                     
                     else:
                         raise Exception(f"Unrecognized qrimage size: {qr_code_dims}")
