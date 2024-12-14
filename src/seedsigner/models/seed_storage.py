@@ -10,6 +10,7 @@ class SeedStorage:
         self.pending_seed: Seed = None
         self._pending_mnemonic: List[str] = []
         self._pending_is_electrum : bool = False
+        self._pending_shamir_share_set: List[str] = []
 
 
     def set_pending_seed(self, seed: Seed):
@@ -103,3 +104,48 @@ class SeedStorage:
     def discard_pending_mnemonic(self):
         self._pending_mnemonic = []
         self._pending_is_electrum = False
+
+    
+    # Shamir shares
+
+    def init_pending_shamir_share_set(self, num_words: int = 20, num_shares: int = 2, is_electrum: bool = False):
+        self._pending_mnemonic = [None] * num_words
+        self._pending_shamir_share_set = [None] * num_shares
+        self._pending_is_electrum = is_electrum
+
+
+    def update_pending_shamir_share_set(self, index: int):
+        """
+        Replaces the nth share in the pending shamir share.
+
+        * may specify a negative `index` (e.g. -1 is the last word).
+        """
+        if index >= len(self._pending_shamir_share_set):
+            raise Exception(f"index {index} is too high")
+        self._pending_shamir_share_set[index] = self._pending_mnemonic    
+        if index < len(self._pending_shamir_share_set) - 1:
+            self.discard_pending_mnemonic()
+            self.init_pending_mnemonic(len(self._pending_shamir_share_set[index]))
+
+
+    def get_pending_shamir_share_set_share(self, index: int) -> List[str]:
+        if index < len(self._pending_shamir_share_set):
+            return self._pending_shamir_share_set[index]
+        return None
+    
+
+    @property
+    def pending_shamir_share_set_length(self) -> int:
+        return len(self._pending_shamir_share_set)
+
+
+    def discard_pending_shamir_share_set(self):
+        self._pending_shamir_share_set = []
+
+
+    def convert_pending_shamir_share_set_to_pending_seed(self, passphrase: str = ''):
+        share_set_formatted = [" ".join(share) for share in self._pending_shamir_share_set]
+        self.pending_seed = Seed.recover_from_shares(share_set_formatted, passphrase)
+        self.discard_pending_mnemonic()
+        self.discard_pending_shamir_share_set()
+        
