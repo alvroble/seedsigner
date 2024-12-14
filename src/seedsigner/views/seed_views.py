@@ -2422,7 +2422,7 @@ class SeedShamirShareSelectView(View):
         
         elif selected_menu_num < len(self.share_set["share_list"]) and self.mode == 1:
             # QR Export for shamir share not yet implemented
-            return Destination(NotYetImplementedView)
+            return Destination(SeedShamirShareTranscribeSeedQRFormatView, view_args={"seed_num": self.seed_num, "shamir_set_index": self.shamir_set_index, "share_index": selected_menu_num})
 
 
 class SeedShamirShareWordsView(View):
@@ -2484,6 +2484,158 @@ class SeedShamirShareWordsView(View):
         elif button_data[selected_menu_num] == DONE:
             # Must clear history to avoid BACK button returning to private info
             return Destination(SeedShamirShareSelectView, view_args={"seed_num": self.seed_num, "shamir_set_index": self.shamir_set_index, "mode": 0})
+        
+
+
+class SeedShamirShareTranscribeSeedQRFormatView(View):
+    def __init__(self, seed_num: int, shamir_set_index, share_index):
+        super().__init__()
+        self.seed_num = seed_num
+        self.seed = self.controller.get_seed(self.seed_num)
+        self.shamir_set_index = shamir_set_index
+        self.share_set = self.seed.get_shamir_share_data(shamir_set_index)
+        self.share_index = share_index
+
+
+    def run(self):
+        seed = self.controller.get_seed(self.seed_num)
+        if len(seed.mnemonic_list) == 12:
+            STANDARD = "Standard: 25x25"
+            COMPACT = "Compact: 21x21"
+            num_modules_standard = 25
+            num_modules_compact = 21
+        else:
+            STANDARD = "Standard: 29x29"
+            COMPACT = "Compact: 25x25"
+            num_modules_standard = 29
+            num_modules_compact = 25
+
+        if self.settings.get_value(SettingsConstants.SETTING__COMPACT_SEEDQR) != SettingsConstants.OPTION__ENABLED:
+            # Only configured for standard SeedQR
+            return Destination(
+                SeedShamirShareTranscribeSeedQRWarningView,
+                view_args={
+                    "seed_num": self.seed_num,
+                    "shamir_set_index": self.shamir_set_index,
+                    "share_index": self.share_index,
+                    "seedqr_format": QRType.SEED__SEEDQR,
+                    "num_modules": num_modules_standard,
+                },
+                skip_current_view=True,
+            )
+
+        button_data = [STANDARD, COMPACT]
+
+        selected_menu_num = seed_screens.SeedTranscribeSeedQRFormatScreen(
+            title="SeedQR Format",
+            button_data=button_data,
+        ).display()
+
+        if selected_menu_num == RET_CODE__BACK_BUTTON:
+            return Destination(BackStackView)
+        
+        if button_data[selected_menu_num] == STANDARD:
+            seedqr_format = QRType.SEED__SEEDQR
+            num_modules = num_modules_standard
+        else:
+            seedqr_format = QRType.SEED__COMPACTSEEDQR
+            num_modules = num_modules_compact
+        
+        return Destination(
+            SeedShamirShareTranscribeSeedQRWarningView,
+                view_args={
+                    "seed_num": self.seed_num,
+                    "shamir_set_index": self.shamir_set_index,
+                    "share_index": self.share_index,
+                    "seedqr_format": seedqr_format,
+                    "num_modules": num_modules,
+                }
+            )
+    
+
+
+class SeedShamirShareTranscribeSeedQRWarningView(View):
+    def __init__(self, seed_num: int, shamir_set_index, share_index, seedqr_format: str = QRType.SEED__SEEDQR, num_modules: int = 29):
+        super().__init__()
+        self.seed_num = seed_num
+        self.seedqr_format = seedqr_format
+        self.num_modules = num_modules
+        self.seed = self.controller.get_seed(self.seed_num)
+        self.shamir_set_index = shamir_set_index
+        self.share_set = self.seed.get_shamir_share_data(shamir_set_index)
+        self.share_index = share_index
+    
+
+    def run(self):
+        destination = Destination(
+            SeedTranscribeShamirShareQRWholeQRView,
+            view_args={
+                "seed_num": self.seed_num,
+                "shamir_set_index": self.shamir_set_index,
+                "share_index": self.share_index,
+                "seedqr_format": self.seedqr_format,
+                "num_modules": self.num_modules,
+            },
+            skip_current_view=True,  # Prevent going BACK to WarningViews
+        )
+
+        if self.settings.get_value(SettingsConstants.SETTING__DIRE_WARNINGS) == SettingsConstants.OPTION__DISABLED:
+            # Forward straight to transcribing the SeedQR
+            return destination
+
+        selected_menu_num = DireWarningScreen(
+            status_headline="SeedQR is your private key!",
+            text="""Never photograph or scan it into a device that connects to the internet.""",
+        ).display()
+
+        if selected_menu_num == RET_CODE__BACK_BUTTON:
+            return Destination(BackStackView)
+
+        else:
+            # User clicked "I Understand"
+            return destination
+        
+
+
+class SeedTranscribeShamirShareQRWholeQRView(View):
+    def __init__(self, seed_num: int, shamir_set_index: int, share_index: int, seedqr_format: str, num_modules: int):
+        super().__init__()
+        self.seed_num = seed_num
+        self.seedqr_format = seedqr_format
+        self.num_modules = num_modules
+        self.seed = self.controller.get_seed(seed_num)
+        self.shamir_set_index = shamir_set_index
+        self.share_set = self.seed.get_shamir_share_data(shamir_set_index)
+        self.share_index = share_index
+    
+
+    def run(self):
+        encoder_args = dict(mnemonic=self.seed.get_share_slip39_list(self.shamir_set_index, self.share_index),
+                            wordlist_language_code=self.settings.get_value(SettingsConstants.SETTING__WORDLIST_LANGUAGE))
+        if self.seedqr_format == QRType.SEED__SEEDQR:
+            e = ShamirShareQREncoder(**encoder_args)
+        elif self.seedqr_format == QRType.SEED__COMPACTSEEDQR:
+            e = CompactShamirShareQrEncoder(**encoder_args)
+
+        data = e.next_part()
+
+        ret = seed_screens.SeedTranscribeSeedQRWholeQRScreen(
+            qr_data=data,
+            num_modules=self.num_modules,
+        ).display()
+
+        if ret == RET_CODE__BACK_BUTTON:
+            return Destination(BackStackView)
+        
+        else:
+            return Destination(SeedOptionsView, view_args={"seed_num": self.seed_num})
+            '''return Destination(
+                SeedTranscribeSeedQRZoomedInView,
+                view_args={
+                    "seed_num": self.seed_num,
+                    "seedqr_format": self.seedqr_format
+                })
+                '''
 
 
 
