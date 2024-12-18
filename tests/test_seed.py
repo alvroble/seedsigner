@@ -83,3 +83,14 @@ def test_electrum_seed_rejects_most_bip39_mnemonics():
 	mnemonic = "only gain spot output unknown craft simple cram absorb suggest ridge famous".split()
 	Seed(mnemonic)
 	ElectrumSeed(mnemonic)
+
+
+def test_shamir_share_seed():
+	share_set_formatted = [ "yield upgrade acrobat leader briefing capacity again epidemic minister frozen impulse math guilt lily install market modify envelope index become",
+							"yield upgrade beard leader ceramic total morning critical brother slap lungs medical dilemma expect olympic jacket ruin airline promise literary"]
+
+	seed_sss = Seed.recover_from_shares(share_set_formatted, slip39_passphrase="")
+
+	seed_regular = Seed(mnemonic="once diamond onion six visa social chair long solve draw stool witness".split())
+
+	assert seed_sss.seed_bytes == seed_regular.seed_bytes
