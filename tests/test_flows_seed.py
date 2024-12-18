@@ -664,3 +664,92 @@ class TestMessageSigningFlows(FlowTest):
         self.settings.set_value(SettingsConstants.SETTING__NETWORK, SettingsConstants.MAINNET)
         expect_unsupported_derivation(self.load_custom_derivation_into_decoder)
 
+
+class TestShamirShareImportFlows(FlowTest):
+    def test_mnemonic_entry_flow(self):
+        """
+            Manually importing a mnemonic from a Shamir shared secret should land at 
+            the Finalize Seed flow and end at the SeedOptionsView.
+        """
+
+        def test_with_mnemonic(mnemonic):
+            # Ensure SSS is enabled
+            self.settings.set_value(SettingsConstants.SETTING__SSS, SettingsConstants.OPTION__ENABLED)
+
+            if len(mnemonic) % 20 == 0:
+                threshold_k = int(len(mnemonic) / 20)
+
+            elif len(mnemonic) % 33 == 0:
+                threshold_k = int(len(mnemonic) / 33)
+
+            Settings.HOSTNAME = "not seedsigner-os"
+            sequence = [
+                FlowStep(MainMenuView, button_data_selection=MainMenuView.SEEDS),
+                FlowStep(seed_views.SeedsMenuView, is_redirect=True),  # When no seeds are loaded it auto-redirects to LoadSeedView
+                FlowStep(seed_views.LoadSeedView, button_data_selection=seed_views.LoadSeedView.TYPE_SSS),
+                FlowStep(seed_views.SeedEntryShamirThresholdView, screen_return_value=dict(entered_number=str(threshold_k))),
+                FlowStep(seed_views.SeedShamirShareImportSelectWordCount, button_data_selection=seed_views.SeedShamirShareImportSelectWordCount.TYPE_12WORD if len(mnemonic) % 20 == 0 else seed_views.SeedShamirShareImportSelectWordCount.TYPE_24WORD),
+            ]
+
+            # Now add each manual word entry step
+            for word in mnemonic:
+                sequence.append(
+                    FlowStep(seed_views.SeedShamirShareMnemonicEntryView, screen_return_value=word)
+                )
+            
+            # With the mnemonic completely entered, we land on the SeedFinalizeView
+            sequence += [
+                FlowStep(seed_views.SeedShamirShareFinalizeView, button_data_selection=seed_views.SeedShamirShareFinalizeView.FINALIZE),
+                FlowStep(seed_views.SeedFinalizeView, button_data_selection=seed_views.SeedFinalizeView.FINALIZE),
+                FlowStep(seed_views.SeedOptionsView),
+            ]
+
+            self.run_sequence(sequence)
+
+        # Test data from iancoleman.io; 12- and 24-word mnemonic
+        test_with_mnemonic("yield upgrade acrobat leader briefing capacity again epidemic minister frozen impulse math guilt lily install market modify envelope index become yield upgrade beard leader ceramic total morning critical brother slap lungs medical dilemma expect olympic jacket ruin airline promise literary".split())
+
+        BaseTest.reset_controller()
+
+    
+    def test_invalid_mnemonic(self):
+        # Ensure SSS is enabled
+        self.settings.set_value(SettingsConstants.SETTING__SSS, SettingsConstants.OPTION__ENABLED)
+
+        # Should be able to go back and edit or discard an invalid mnemonic 
+        # Test data from iancoleman.io
+        mnemonic = "yield upgrade acrobat leader briefing capacity again epidemic minister frozen impulse math guilt lily install market modify envelope index become yield upgrade beard leader ceramic total morning critical brother slap lungs medical dilemma expect olympic jacket ruin airline promise literary".split()
+        
+        if len(mnemonic) % 20 == 0:
+            threshold_k = int(len(mnemonic) / 20)
+                
+        elif len(mnemonic) % 33 == 0:
+            threshold_k = int(len(mnemonic) / 33)
+        
+        sequence = [
+            FlowStep(MainMenuView, button_data_selection=MainMenuView.SEEDS),
+            FlowStep(seed_views.SeedsMenuView, is_redirect=True),  # When no seeds are loaded it auto-redirects to LoadSeedView
+            FlowStep(seed_views.LoadSeedView, button_data_selection=seed_views.LoadSeedView.TYPE_SSS),
+            FlowStep(seed_views.SeedEntryShamirThresholdView, screen_return_value=dict(entered_number=str(threshold_k))),
+            FlowStep(seed_views.SeedShamirShareImportSelectWordCount, button_data_selection=seed_views.SeedShamirShareImportSelectWordCount.TYPE_12WORD if len(mnemonic) % 20 == 0 else seed_views.SeedShamirShareImportSelectWordCount.TYPE_24WORD),
+        ]
+        for word in mnemonic[:-1]:
+            sequence.append(FlowStep(seed_views.SeedShamirShareMnemonicEntryView, screen_return_value=word))
+
+        sequence += [
+            FlowStep(seed_views.SeedShamirShareMnemonicEntryView, screen_return_value="gravity"),  # But finish with an INVALID checksum word
+            FlowStep(seed_views.SeedShamirShareInvalidView, button_data_selection=seed_views.SeedShamirShareInvalidView.EDIT),
+        ]
+
+        # Restarts from first word
+        for word in mnemonic[:-1]:
+            sequence.append(FlowStep(seed_views.SeedShamirShareMnemonicEntryView, screen_return_value=word))
+
+        sequence += [
+            FlowStep(seed_views.SeedShamirShareMnemonicEntryView, screen_return_value="goat"),  # provide yet another invalid checksum word
+            FlowStep(seed_views.SeedShamirShareInvalidView, button_data_selection=seed_views.SeedShamirShareInvalidView.DISCARD),
+            FlowStep(MainMenuView),
+        ]
+
+        self.run_sequence(sequence)
+        
