@@ -2203,7 +2203,7 @@ class SeedEntryShamirThresholdView(View):
         super().__init__()
         self.seed_num = seed_num
         if mode == 1:
-            # Export mode (TODO)
+            # TODO: Export mode
             self.seed = self.controller.get_seed(self.seed_num)
         self.mode = mode
 
@@ -2248,7 +2248,7 @@ class SeedEntryShamirShareCountView(View):
             return Destination(BackStackView)
             
         elif ret_dict["entered_number"] != "":
-            # What if == 0? or == 1? TODO
+            # What if == 0? TODO
             # Should take to SeedShamirShareFinalizeView
             return Destination(NotYetImplementedView)
 

@@ -161,13 +161,7 @@ class Seed:
         return bip85.derive_mnemonic(root, bip85_num_words, bip85_index)
         
 
-    ### Shamir's Secret Sharing
-
-    def generate_shares(self, k, n, slip39_passphrase: str = ""):
-        share_set = slip39.ShareSet.generate_shares(self.mnemonic_str, k, n, slip39_passphrase.encode('utf-8'))
-        self._shamir_share_sets.append((k, n, share_set, slip39_passphrase))
-        return share_set
-    
+    # Shamir's Secret Sharing
 
     @classmethod
     def recover_from_shares(cls, shares: list[str], slip39_passphrase: str = ""):
@@ -192,28 +186,7 @@ class Seed:
     def slip39_passphrase_label(self) -> str:
         #return SettingsConstants.LABEL__BIP39_PASSPHRASE
         return "SLIP-39 Passphrase"
-
     
-    @property
-    def shamir_share_set_count(self) -> int:
-        #return SettingsConstants.LABEL__BIP39_PASSPHRASE
-        return len(self._shamir_share_sets)
-
-
-    def get_shamir_share_data(self, idx: int) -> dict:
-        return {"k": self._shamir_share_sets[idx][0], 
-                "n": self._shamir_share_sets[idx][1], 
-                "share_list": self._shamir_share_sets[idx][2],
-                "passphrase": self._shamir_share_sets[idx][3]}
-    
-
-    def get_share_slip39_display_list(self, share_set_idx, share_idx) -> List[str]:
-        return unicodedata.normalize("NFC", self._shamir_share_sets[share_set_idx][2][share_idx]).split()
-    
-
-    def get_share_slip39_list(self, share_set_idx, share_idx) -> List[str]:
-        return self._shamir_share_sets[share_set_idx][2][share_idx].split()
-
 
     ### override operators    
     def __eq__(self, other):
