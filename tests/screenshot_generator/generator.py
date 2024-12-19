@@ -227,6 +227,13 @@ def test_generate_screenshots(target_locale):
             seed_views.SeedSignMessageConfirmAddressView,
 
             seed_views.SeedElectrumMnemonicStartView,
+
+            seed_views.SeedEntryShamirThresholdView,
+            (seed_views.SeedShamirShareImportSelectWordCount, dict(k=2)),
+            seed_views.SeedShamirShareMnemonicEntryView,
+            (seed_views.SeedShamirShareFinalizeView, dict(k=2)),
+            seed_views.SeedShamirShareInvalidView,
+
         ],
         "PSBT Views": [
             psbt_views.PSBTSelectSeedView, # this will fail, be rerun below
