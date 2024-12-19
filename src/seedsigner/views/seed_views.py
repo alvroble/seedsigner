@@ -2337,7 +2337,7 @@ class SeedAddSlip39PassphraseView(View):
 
 
     def run(self):
-        passphrase_title=self.seed.slip39_passphrase_label
+        passphrase_title = "SLIP-39 Passphrase"
         ret_dict = self.run_screen(seed_screens.SeedAddPassphraseScreen, passphrase="", title=passphrase_title)
 
         # The new passphrase will be the return value; it might be empty.
@@ -2349,7 +2349,8 @@ class SeedAddSlip39PassphraseView(View):
             
         else:
             if self.mode == 1:
-                self.seed.generate_shares(self.k, self.n, ret_dict["passphrase"])
+                # TODO: export shares
+                #self.seed.generate_shares(self.k, self.n, ret_dict["passphrase"])
                 #return Destination(SeedShamirShareOptionsView,  view_args={"seed_num": self.seed_num, "shamir_set_index": self.shamir_set_index})
                 return Destination(NotYetImplementedView)
             else:
