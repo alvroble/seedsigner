@@ -2292,7 +2292,7 @@ class SeedEntryShamirThresholdView(View):
 
 
     def run(self):
-        title = "SLIP-39 Threshold"
+        title = _("SLIP-39 Threshold")
         ret_dict = self.run_screen(seed_screens.SeedEntryShamirThresholdScreen, entered_number="", title=title)
 
         #print(ret_dict["entered_number"])
@@ -2320,7 +2320,7 @@ class SeedEntryShamirShareCountView(View):
 
 
     def run(self):
-        title = "SLIP-39 Share Count"
+        title = _("SLIP-39 Share Count")
         ret_dict = self.run_screen(seed_screens.SeedEntryShamirShareCountScreen, entered_number="", title=title)
 
         # The new passphrase will be the return value; it might be empty.
@@ -2360,7 +2360,7 @@ class SeedShamirShareFinalizeView(View):
 
         selected_menu_num = self.run_screen(
             seed_screens.ShamirFinalizeScreen,
-            value_text=self.PASSPHRASE if self.mode == 0 else f"Shamir Share #{self.shamir_set_index}",
+            value_text=self.PASSPHRASE if self.mode == 0 else _("Shamir Share #{}").format(self.shamir_set_index),
             button_data=button_data,
         )
 
@@ -2393,7 +2393,7 @@ class SeedShamirShareImportSelectWordCount(View):
 
         selected_menu_num = self.run_screen(
             ButtonListScreen,
-            title="Select Seed Word Count",
+            title=_("Select Seed Word Count"),
             button_data=button_data,
         )
 
@@ -2420,7 +2420,7 @@ class SeedAddSlip39PassphraseView(View):
 
 
     def run(self):
-        passphrase_title = "SLIP-39 Passphrase"
+        passphrase_title = _("SLIP-39 Passphrase")
         ret_dict = self.run_screen(seed_screens.SeedAddPassphraseScreen, passphrase="", title=passphrase_title)
 
         # The new passphrase will be the return value; it might be empty.
@@ -2453,7 +2453,7 @@ class SeedShamirShareMnemonicEntryView(View):
     def run(self):
         ret = self.run_screen(
             seed_screens.SeedMnemonicEntryScreen,
-            title=f"Share #{self.cur_set_index + 1} Word #{self.cur_word_index + 1}",  # Human-readable 1-indexing!
+            title=_("Share #{} Word #{}").format(self.cur_set_index+1, self.cur_word_index+1),  # Human-readable 1-indexing!
             initial_letters=list(self.cur_word) if self.cur_word else ["a"],
             wordlist=Seed.get_slip39_wordlist(wordlist_language_code=self.settings.get_value(SettingsConstants.SETTING__WORDLIST_LANGUAGE)),
         )
@@ -2516,7 +2516,7 @@ class SeedShamirShareMnemonicEntryView(View):
 
 class SeedShamirShareInvalidView(View):
     EDIT = ButtonOption("Review & Edit")
-    DISCARD = ButtonOption("Discard", None, None, "red")
+    DISCARD = ButtonOption("Discard", button_label_color="red")
 
     def __init__(self):
         super().__init__()
@@ -2527,9 +2527,9 @@ class SeedShamirShareInvalidView(View):
         button_data = [self.EDIT, self.DISCARD]
         selected_menu_num = self.run_screen(
             WarningScreen,
-            title="Invalid Shamir Share!",
+            title=_("Invalid Shamir Share!"),
             status_headline=None,
-            text=f"Checksum failure; not a valid Shamir share.",
+            text=_("Checksum failure; not a valid Shamir share."),
             show_back_button=False,
             button_data=button_data,
         )
