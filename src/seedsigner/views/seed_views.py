@@ -2360,7 +2360,7 @@ class SeedShamirShareFinalizeView(View):
 
         selected_menu_num = self.run_screen(
             seed_screens.ShamirFinalizeScreen,
-            value_text=self.PASSPHRASE if self.mode == 0 else _("Shamir Share #{}").format(self.shamir_set_index),
+            value_text=_("SLIP-39 Passphrase") if self.mode == 0 else _("Shamir Share #{}").format(self.shamir_set_index),
             button_data=button_data,
         )
 
