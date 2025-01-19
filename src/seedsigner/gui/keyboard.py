@@ -71,14 +71,14 @@ class Keyboard:
     }
     KEY_CURSOR_LEFT = {
         "code": "CURSOR_LEFT",
-        "letter": "<",
-        "font": REGULAR_KEY_FONT,
+        "letter": SeedSignerIconConstants.CHEVRON_LEFT,
+        "font": ICON_KEY_FONT,
         "size": 1,
     }
     KEY_CURSOR_RIGHT = {
         "code": "CURSOR_RIGHT",
-        "letter": ">",
-        "font": REGULAR_KEY_FONT,
+        "letter": SeedSignerIconConstants.CHEVRON_RIGHT,
+        "font": ICON_KEY_FONT,
         "size": 1,
     }
     KEY_PREVIOUS_PAGE = {

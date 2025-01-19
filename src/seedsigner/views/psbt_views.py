@@ -460,17 +460,16 @@ class PSBTAddressVerificationFailedView(View):
 
     def run(self):
         if self.is_multisig:
-            title = _("Caution")
             # TRANSLATOR_NOTE: Variable is either "change" or "self-transfer".
-            text = _("PSBT's {} address could not be verified with your multisig wallet descriptor.").format(_("change") if self.is_change else _("self-transfer"))
+            text = _("PSBT's {} address could not be verified from wallet descriptor.").format(_("change") if self.is_change else _("self-transfer"))
         else:
-            title = _("Suspicious PSBT")
             # TRANSLATOR_NOTE: Variable is either "change" or "self-transfer".
             text = _("PSBT's {} address could not be generated from your seed.").format(_("change") if self.is_change else _("self-transfer"))
         
         DireWarningScreen(
-            title=title,
+            title=_("Suspicious PSBT"),
             status_headline=_("Address Verification Failed"),
+            status_icon_name=SeedSignerIconConstants.ERROR,
             text=text,
             button_data=[ButtonOption("Discard PSBT")],
             show_back_button=False,

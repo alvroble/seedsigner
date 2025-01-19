@@ -300,6 +300,7 @@ class NotYetImplementedView(View):
 class ErrorView(View):
     title: str = _mft("Error")
     show_back_button: bool = True
+    status_icon_name: str = SeedSignerIconConstants.ERROR
     status_headline: str = None
     text: str = None
     button_text: str = None
@@ -309,6 +310,7 @@ class ErrorView(View):
         self.run_screen(
             WarningScreen,
             title=self.title,
+            status_icon_name=self.status_icon_name,
             status_headline=self.status_headline,
             text=self.text,
             button_data=[ButtonOption(self.button_text)],
@@ -324,9 +326,14 @@ class NetworkMismatchErrorView(ErrorView):
 
     def __post_init__(self):
         from seedsigner.views.settings_views import SettingsEntryUpdateSelectionView
-        self.title: str = _("Network Mismatch")
-        self.show_back_button: bool = False
-        self.button_text: str = _("Change Setting")
+
+        # TRANSLATOR_NOTE: The network setting (mainnet/testnet/regtest) doesn't match the provided derivation path
+        self.title = _("Network Mismatch")
+        self.status_icon_name = SeedSignerIconConstants.WARNING
+        self.show_back_button = False
+
+        # TRANSLATOR_NOTE: Button option to alter a setting
+        self.button_text = _("Change Setting")
         self.next_destination = Destination(SettingsEntryUpdateSelectionView, view_args=dict(attr_name=SettingsConstants.SETTING__NETWORK), clear_history=True)
         super().__post_init__()
 
@@ -347,6 +354,7 @@ class UnhandledExceptionView(View):
         self.run_screen(
             DireWarningScreen,
             title=_("System Error"),
+            status_icon_name=SeedSignerIconConstants.ERROR,
             status_headline=self.error[0],
             text=self.error[1] + "\n" + self.error[2],
             allow_text_overflow=True,  # Fit what we can, let the rest go off the edges

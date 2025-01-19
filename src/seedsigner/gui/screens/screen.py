@@ -309,7 +309,7 @@ class ButtonListScreen(BaseTopNavScreen):
         if len(self.button_data) == 1:
             button_list_height = button_height
         else:
-            button_list_height = (len(self.button_data) * button_height) + (GUIConstants.COMPONENT_PADDING * (len(self.button_data) - 1))
+            button_list_height = (len(self.button_data) * button_height) + (GUIConstants.LIST_ITEM_PADDING * (len(self.button_data) - 1))
 
         if self.is_bottom_list:
             button_list_y = self.canvas_height - (button_list_height + GUIConstants.EDGE_PADDING)

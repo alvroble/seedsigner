@@ -2,6 +2,7 @@ import logging
 import re
 
 from gettext import gettext as _
+from seedsigner.gui.components import SeedSignerIconConstants
 from seedsigner.helpers.l10n import mark_for_translation as _mft
 from seedsigner.models.settings import SettingsConstants
 from seedsigner.views.view import BackStackView, ErrorView, MainMenuView, NotYetImplementedView, View, Destination
@@ -163,8 +164,13 @@ class ScanView(View):
             # For now, don't even try to re-do the attempted operation, just reset and
             # start everything over.
             self.controller.resume_main_flow = None
+
+            # TODO: Refactor this warning screen into its own Screen class; the
+            # screenshot generator is currently manually re-creating it, but it would be
+            # better if a dedicated Screen could just be instantiated instead.
             return Destination(ErrorView, view_args=dict(
                 title=_("Error"),
+                status_icon_name=SeedSignerIconConstants.WARNING,
                 status_headline=_("Unknown QR Type"),
                 text=_("QRCode is invalid or is a data format not yet supported."),
                 button_text=_("Done"),
