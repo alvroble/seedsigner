@@ -78,7 +78,7 @@ jobs:
           ls -la src
 
       - name: restore build cache
-        uses: actions/cache@v4
+        uses: actions/cache@v3
         # Caching reduces the build time to ~50% (currently: ~30 mins instead of ~1 hour,
         # while consuming ~850 MB storage space).
         with:
