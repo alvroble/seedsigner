@@ -101,7 +101,7 @@ jobs:
       - name: rename image
         run: |
           cd seedsigner-os/images
-          mv seedsigner_os*.img seedsigner_os.${{ env.img_version }}.${{ matrix.target }}.img
+          mv *.img seedsigner_os.${{ env.img_version }}.${{ matrix.target }}.img
 
       - name: print sha256sum
         run: |
@@ -129,7 +129,7 @@ jobs:
       - name: download images
         uses: actions/download-artifact@v4
         with:
-          name: seedsigner_os_images
+          name: seedsigner_os_images-${{ matrix.target }}
           path: images
 
       - name: list images
