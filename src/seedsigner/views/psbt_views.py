@@ -469,7 +469,6 @@ class PSBTAddressVerificationFailedView(View):
         DireWarningScreen(
             title=_("Suspicious PSBT"),
             status_headline=_("Address Verification Failed"),
-            status_icon_name=SeedSignerIconConstants.ERROR,
             text=text,
             button_data=[ButtonOption("Discard PSBT")],
             show_back_button=False,

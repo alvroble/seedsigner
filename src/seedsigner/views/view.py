@@ -5,7 +5,7 @@ from typing import Type
 from seedsigner.helpers.l10n import mark_for_translation as _mft
 from seedsigner.gui.components import SeedSignerIconConstants
 from seedsigner.gui.screens import RET_CODE__POWER_BUTTON, RET_CODE__BACK_BUTTON
-from seedsigner.gui.screens.screen import BaseScreen, ButtonOption, DireWarningScreen, LargeButtonScreen, PowerOffScreen, PowerOffNotRequiredScreen, ResetScreen, WarningScreen
+from seedsigner.gui.screens.screen import BaseScreen, ButtonOption, LargeButtonScreen, WarningScreen, ErrorScreen
 from seedsigner.models.settings import Settings, SettingsConstants
 from seedsigner.models.settings_definition import SettingsDefinition
 from seedsigner.models.threads import BaseThread
@@ -245,6 +245,7 @@ class PowerOptionsView(View):
 
 class RestartView(View):
     def run(self):
+        from seedsigner.gui.screens.screen import ResetScreen
         thread = RestartView.DoResetThread()
         thread.start()
         self.run_screen(ResetScreen)
@@ -270,6 +271,7 @@ class RestartView(View):
 
 class PowerOffView(View):
     def run(self):
+        from seedsigner.gui.screens.screen import PowerOffNotRequiredScreen
         self.run_screen(PowerOffNotRequiredScreen)
         return Destination(BackStackView)
 
@@ -308,7 +310,7 @@ class ErrorView(View):
 
     def run(self):
         self.run_screen(
-            WarningScreen,
+            ErrorScreen,
             title=self.title,
             status_icon_name=self.status_icon_name,
             status_headline=self.status_headline,
@@ -349,12 +351,10 @@ class NetworkMismatchErrorView(ErrorView):
 class UnhandledExceptionView(View):
     error: list[str]
 
-
     def run(self):
         self.run_screen(
-            DireWarningScreen,
+            ErrorScreen,
             title=_("System Error"),
-            status_icon_name=SeedSignerIconConstants.ERROR,
             status_headline=self.error[0],
             text=self.error[1] + "\n" + self.error[2],
             allow_text_overflow=True,  # Fit what we can, let the rest go off the edges
