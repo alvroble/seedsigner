@@ -43,8 +43,8 @@ class ToolsImageEntropyLivePreviewScreen(BaseScreen):
                 time.sleep(0.01)
                 continue
 
-            # Check for joystick click to take final entropy image
-            if self.hw_inputs.check_for_low(HardwareButtonsConstants.KEY_PRESS):
+            # Check for ANYCLICK to take final entropy image
+            if self.hw_inputs.check_for_low(keys=HardwareButtonsConstants.KEYS__ANYCLICK):
                 # Have to manually update last input time since we're not in a wait_for loop
                 self.hw_inputs.update_last_input_time()
                 self.camera.stop_video_stream_mode()
@@ -77,7 +77,7 @@ class ToolsImageEntropyLivePreviewScreen(BaseScreen):
                         int(self.renderer.canvas_width/2),
                         self.renderer.canvas_height - GUIConstants.EDGE_PADDING
                     ),
-                    text="< " + _("back") + "  |  " + _("click joystick"),  # TODO: Render with UI elements instead of text
+                    text="< " + _("back") + "  |  " + _("click a button"),  # TODO: Render with UI elements instead of text
                     fill=GUIConstants.BODY_FONT_COLOR,
                     font=instructions_font,
                     stroke_width=4,
@@ -123,7 +123,8 @@ class ToolsImageEntropyFinalImageScreen(BaseScreen):
             )
             self.renderer.show_image()
 
-        input = self.hw_inputs.wait_for([HardwareButtonsConstants.KEY_LEFT, HardwareButtonsConstants.KEY_RIGHT])
+        # LEFT = reshoot, RIGHT / ANYCLICK = accept
+        input = self.hw_inputs.wait_for([HardwareButtonsConstants.KEY_LEFT, HardwareButtonsConstants.KEY_RIGHT] + HardwareButtonsConstants.KEYS__ANYCLICK)
         if input == HardwareButtonsConstants.KEY_LEFT:
             return RET_CODE__BACK_BUTTON
 

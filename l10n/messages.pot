@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: seedsigner 0.8.5-rc1\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-01-19 10:20-0600\n"
+"POT-Creation-Date: 2025-01-28 13:28-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -219,6 +219,11 @@ msgstr ""
 
 #: src/seedsigner/gui/screens/screen.py
 msgid "Classified Info!"
+msgstr ""
+
+#: src/seedsigner/gui/screens/screen.py src/seedsigner/views/scan_views.py
+#: src/seedsigner/views/view.py
+msgid "Error"
 msgstr ""
 
 #: src/seedsigner/gui/screens/screen.py
@@ -506,7 +511,7 @@ msgid "Home"
 msgstr ""
 
 #: src/seedsigner/gui/screens/tools_screens.py
-msgid "click joystick"
+msgid "click a button"
 msgstr ""
 
 #. A prompt to the user to either accept or reshoot the image
@@ -943,23 +948,6 @@ msgstr ""
 msgid "Wrong QR Type"
 msgstr ""
 
-#: src/seedsigner/views/scan_views.py src/seedsigner/views/view.py
-msgid "Error"
-msgstr ""
-
-#: src/seedsigner/views/scan_views.py
-msgid "Unknown QR Type"
-msgstr ""
-
-#: src/seedsigner/views/scan_views.py
-msgid "QRCode is invalid or is a data format not yet supported."
-msgstr ""
-
-#: src/seedsigner/views/scan_views.py src/seedsigner/views/seed_views.py
-#: src/seedsigner/views/view.py
-msgid "Done"
-msgstr ""
-
 #: src/seedsigner/views/scan_views.py src/seedsigner/views/seed_views.py
 msgid "Scan PSBT"
 msgstr ""
@@ -990,6 +978,19 @@ msgstr ""
 
 #: src/seedsigner/views/scan_views.py
 msgid "Expected an address QR"
+msgstr ""
+
+#: src/seedsigner/views/scan_views.py
+msgid "Unknown QR Type"
+msgstr ""
+
+#: src/seedsigner/views/scan_views.py
+msgid "QRCode is invalid or is a data format not yet supported."
+msgstr ""
+
+#: src/seedsigner/views/scan_views.py src/seedsigner/views/seed_views.py
+#: src/seedsigner/views/view.py
+msgid "Done"
 msgstr ""
 
 #. This is on the opening splash screen, displayed above the HRF logo
