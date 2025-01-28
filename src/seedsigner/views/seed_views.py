@@ -279,8 +279,9 @@ class SeedMnemonicInvalidView(View):
     def run(self):
         button_data = [self.EDIT, self.DISCARD]
         selected_menu_num = self.run_screen(
-            WarningScreen,
+            DireWarningScreen,
             title=_("Invalid Mnemonic!"),
+            status_icon_name=SeedSignerIconConstants.ERROR,
             status_headline=None,
             text=_("Checksum failure; not a valid seed phrase."),
             show_back_button=False,
@@ -1206,6 +1207,7 @@ class SeedBIP85InvalidChildIndexView(View):
         DireWarningScreen(
             title=_("BIP-85 Index Error"),
             show_back_button=False,
+            status_icon_name=SeedSignerIconConstants.ERROR,
             status_headline=_("Invalid Child Index"),
             text=_("BIP-85 Child Index must be between 0 and 2^31-1."),
             button_data=[ButtonOption("Try Again")]
@@ -1366,6 +1368,7 @@ class SeedWordsBackupTestMistakeView(View):
         selected_menu_num = DireWarningScreen(
             title=_("Verification Error"),
             show_back_button=False,
+            status_icon_name=SeedSignerIconConstants.ERROR,
             status_headline=status_headline,
             button_data=button_data,
             text=text,
