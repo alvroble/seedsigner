@@ -83,6 +83,9 @@ class PSBTSelectSeedView(View):
 
 
 class PSBTOverviewView(View):
+    # TODO: Possibly make this configurable via settings
+    HIGH_FEES_WARNING_THRESHOLD = 25 # in percent
+    
     def __init__(self):
         super().__init__()
 
@@ -151,10 +154,17 @@ class PSBTOverviewView(View):
             self.controller.psbt_seed = None
             return Destination(BackStackView)
 
+        total_output_value_excluding_change = psbt_parser.get_total_output_value()
+
         # expecting p2sh (legacy multisig) and p2pkh to have no policy set
         # skip change warning and psbt math view
         if psbt_parser.policy == None:
             return Destination(PSBTUnsupportedScriptTypeWarningView)
+
+        # High Fee warning if fee amount > <HIGH_FEES_WARNING_THRESHOLD> % of total outputs excluding change
+        # Skip the warning when there is no output other than change
+        elif total_output_value_excluding_change > 0 and psbt_parser.fee_amount > self.HIGH_FEES_WARNING_THRESHOLD/100 * (total_output_value_excluding_change):
+            return Destination(PSBTHighFeeWarningView, view_args={"warning_threshold_percent": self.HIGH_FEES_WARNING_THRESHOLD})
         
         elif psbt_parser.change_amount == 0:
             return Destination(PSBTNoChangeWarningView)
@@ -201,6 +211,38 @@ class PSBTNoChangeWarningView(View):
             PSBTMathView,
             skip_current_view=True,  # Prevent going BACK to WarningViews
         )
+
+
+
+class PSBTHighFeeWarningView(View):
+    def __init__(self, warning_threshold_percent: int):
+        super().__init__()
+        
+        self.warning_threshold_percent = warning_threshold_percent
+    
+    def run(self):
+        selected_menu_num = WarningScreen(
+            status_headline=_("High Fee!"),
+            # TRANSLATOR_NOTE: Variable is the percentage of the total output value (excluding change) that the fee exceeds. (e.g. "This PSBT has a fee higher than 25% of the total output value (excluding change).")
+            text=_("This PSBT has a fee higher than {}% of the total output value (excluding change).").format(self.warning_threshold_percent),
+            button_data=[ButtonOption("Continue")],
+        ).display()
+
+        if selected_menu_num == RET_CODE__BACK_BUTTON:
+            return Destination(BackStackView)
+
+        # PSBT may have high fee + no change
+        if self.controller.psbt_parser.change_amount == 0:
+            return Destination(
+                PSBTNoChangeWarningView,
+                skip_current_view=True,  # Prevent going BACK to WarningViews
+            )
+
+        else:
+            return Destination(
+                PSBTMathView,
+                skip_current_view=True,  # Prevent going BACK to WarningViews
+            )
 
 
 

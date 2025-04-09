@@ -324,6 +324,7 @@ def generate_screenshots(locale):
                 ScreenshotConfig(psbt_views.PSBTOverviewView, run_before=load_basic_psbt_cb),
                 ScreenshotConfig(psbt_views.PSBTUnsupportedScriptTypeWarningView),
                 ScreenshotConfig(psbt_views.PSBTNoChangeWarningView),
+                ScreenshotConfig(psbt_views.PSBTHighFeeWarningView, dict(warning_threshold_percent=25)),
                 ScreenshotConfig(psbt_views.PSBTMathView),
                 ScreenshotConfig(psbt_views.PSBTAddressDetailsView, dict(address_num=0)),
 

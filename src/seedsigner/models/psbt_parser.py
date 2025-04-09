@@ -390,3 +390,30 @@ class PSBTParser():
         is_owner = descriptor.owns(output)
         # print(f"{self.psbt.tx.vout[i].script_pubkey.address()} | {output.value} | {is_owner}")
         return is_owner
+
+
+    def get_total_output_value(self, include_change: bool = False):
+        """
+            Returns the sum of all outputs (fee not included).
+            
+            If `include_change=True`, all outputs are included.
+            If `False`, subtracts *true* change outputs (from derivation path with chain index 1),
+            but keeps self-transfer amounts (from chain index 0) included in the total.
+            
+            This is used to to calculate whether the fee is relatively high
+            and show a warning screen if it is.
+        """
+        total = sum(out.value for out in self.psbt.tx.vout)
+
+        if include_change:
+            return total
+
+        # Subtract only *true* change (chain index == 1)
+        # In both single- and multi-sig, all derivation paths in an entry share the same chain index,
+        # so checking the first path is sufficient.
+        true_change = sum(
+            entry["amount"]
+            for entry in self.change_data
+            if int(entry["derivation_path"][0].split("/")[-2]) == 1
+        )
+        return total - true_change

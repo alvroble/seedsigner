@@ -1,6 +1,8 @@
 from binascii import a2b_base64
+from types import SimpleNamespace
 from embit import psbt
 from embit.descriptor import Descriptor
+import pytest
 
 from seedsigner.models.psbt_parser import PSBTParser
 from seedsigner.models.seed import Seed
@@ -201,3 +203,78 @@ def test_parse_op_return_content():
     assert psbt_parser.change_amount == 99992296
     assert psbt_parser.destination_addresses == []
     assert psbt_parser.destination_amounts == []
+
+
+@pytest.mark.parametrize("vout_values, change_data, expected", [
+    # single destination + single change
+    ([100, 200], [{"derivation_path": ["m/84h/0h/0h/1/0"], "amount": 200}], 100),
+    
+    # multiple destinations + single change
+    ([50, 75, 25], [{"derivation_path": ["m/84h/0h/0h/1/0"], "amount": 25}], 50 + 75),
+
+    # no change outputs at all
+    ([10, 20, 30], [], 10 + 20 + 30),
+
+    # only change outputs
+    ([123], [{"derivation_path": ["m/84h/0h/0h/1/5"], "amount": 123}], 0),
+
+    # mix of true change and self-transfer
+    (
+        [100, 200, 300], 
+        [
+            {"derivation_path": ["m/84h/0h/0h/0/0"], "amount": 200},  # self-transfer
+            {"derivation_path": ["m/84h/0h/0h/1/0"], "amount": 300},  # true change
+        ], 
+        100 + 200  # Only subtract true change (300)
+    ),
+])
+def test_get_total_output_value_excluding_change_logic(vout_values, change_data, expected):
+    """
+        get_total_output_value() should return
+        sum(vout_values) - sum(true_change),
+        where true change is determined by derivation path having chain index 1.
+    """
+    # Build a dummy parser without running .parse()
+    parser = PSBTParser.__new__(PSBTParser)
+    
+    # Stub out parser.psbt.tx.vout as list of objects with a .value attribute
+    parser.psbt = SimpleNamespace(
+        tx=SimpleNamespace(
+            vout=[SimpleNamespace(value=v) for v in vout_values]
+        )
+    )
+    parser.change_data = change_data
+
+    assert parser.get_total_output_value() == expected
+
+
+def test_get_total_output_value_integration():
+    """
+    Integration test for get_total_output_value() using a real PSBT.
+
+    PSBT from test_p2tr_change_detection has the following outputs:
+      - Destination output: 319,049,328 sats
+      - Change output:      2,871,443,918 sats
+
+    Total Output values should be:
+      - excluding change (default): 319,049,328 sats
+      - including change:           3,190,493,246 sats
+
+    """
+    # This is the same PSBT as in test_p2tr_change_detection
+    psbt_base64 = "cHNidP8BAIkCAAAAAf8upuiIWF1VTgC/Q8ZWRrameRigaXpRcQcBe8ye+TK3AQAAAAAXCgAAAs7BJqsAAAAAIlEgGKqNQ7yF4+yFrrscHnjrbEHiJFExhR903ze43FtOH3BwTgQTAAAAACJRINBe93RcrOYO4UVLLE0y8pzvblOKQWcoQ0obCey8nA5GAAAAAE8BBDWHzwNMUx9OgAAAAJdr+WtwWfVa6IPbpKZ4KgRC0clbm11Gl155IPA27n2FAvQCrFGH6Ac2U0Gcy1IH5f5ltgUBDz2+fe8iqL6JzZdgEDlK7RRWAACAAQAAgAAAAIAAAQB9AgAAAAGAKOOUFIzw9pbRDaZ7F0DYhLImrdMn//OSm++ff5VNdAAAAAAAAQAAAAKsjLwAAAAAABYAFKEcuxvXmB3rWHSqSviP5mrKMZoL2RArvgAAAAAiUSBGU0Lg5fx/ECsB1Z4ZUqXQFSLFnlmpm0rm5R2l599h2AAAAAABASvZECu+AAAAACJRIEZTQuDl/H8QKwHVnhlSpdAVIsWeWambSublHaXn32HYAQMEAAAAACEWF7hZVn7pIDR429kAn/WDeQiWjZey1iGHztsL1H83QLMZADlK7RRWAACAAQAAgAAAAIABAAAAAAAAAAEXIBe4WVZ+6SA0eNvZAJ/1g3kIlo2XstYhh87bC9R/N0CzACEHbJdqWyMxF2eOPr6YRXUJmry04HUbgKyeM2IZeG+NI9AZADlK7RRWAACAAQAAgAAAAIABAAAAAQAAAAEFIGyXalsjMRdnjj6+mEV1CZq8tOB1G4CsnjNiGXhvjSPQAAA="
+    
+    raw = a2b_base64(psbt_base64)
+    tx = psbt.PSBT.parse(raw)
+    
+    mnemonic = "goddess rough corn exclude cream trial fee trumpet million prevent gaze power".split()
+    pw = ""
+    seed = Seed(mnemonic, passphrase=pw)
+
+    pp = PSBTParser(p=tx, seed=seed, network=SettingsConstants.REGTEST)
+    
+    # Should return only the destination output (change excluded by default)
+    assert pp.get_total_output_value() == 319049328
+    
+    # Should return destination + change output
+    assert pp.get_total_output_value(include_change=True) == 319049328 + 2871443918  # 3,190,493,246
