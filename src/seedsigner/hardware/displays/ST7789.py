@@ -170,4 +170,4 @@ class ST7789(object):
 
     def invert(self, enabled: bool = True):
         """Invert how the display interprets colors"""
-        self.command(0x21 if enabled else 0x20)
+        self.command(0x20 if enabled else 0x21)
