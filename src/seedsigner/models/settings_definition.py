@@ -160,7 +160,7 @@ class SettingsConstants:
         LOCALE__MALTESE: "Malti",
         # LOCALE__MARATHI: "मराठी (Marathi)",
         LOCALE__NORWEGIAN: "Norsk",
-        # LOCALE__PERSIAN: "فارسی (Persian)",
+        LOCALE__PERSIAN: "فارسی (Persian)",
         LOCALE__POLISH: "Polski",
         LOCALE__PORTUGUESE_BR: "Português (Brasil)",
         LOCALE__PORTUGUESE_PT: "Português (Portugal)",
@@ -180,6 +180,22 @@ class SettingsConstants:
         # LOCALE__URDU: "اردو (Urdu)",
         LOCALE__VIETNAMESE: "Tiếng Việt (Vietnamese)",
     }
+
+    # RTL language constants for right-to-left text rendering
+    RTL_LANGUAGES = [
+        LOCALE__ARABIC,
+        LOCALE__HEBREW,
+        LOCALE__PERSIAN,
+        LOCALE__URDU
+    ]
+
+    @classmethod
+    def is_rtl_language(cls, locale=None) -> bool:
+        """Check if the given locale is a right-to-left language"""
+        if not locale:
+            from seedsigner.models.settings import Settings
+            locale = Settings.get_instance().get_value(cls.SETTING__LOCALE)
+        return locale in cls.RTL_LANGUAGES
 
     @classmethod
     def get_detected_languages(cls) -> list[tuple[str, str]]:
