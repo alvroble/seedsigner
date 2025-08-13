@@ -25,6 +25,7 @@ class PSBTOverviewScreen(ButtonListScreen):
     num_change_outputs: int = 0
     destination_addresses: list[str] = None
     has_op_return: bool = False
+    is_high_fee: bool = False
     
 
     def __post_init__(self):
@@ -310,12 +311,17 @@ class PSBTOverviewScreen(ButtonListScreen):
         recipients_text_x = destination_col_x
 
         output_curves = []
-        for destination in destination_column:
+        for i, destination in enumerate(destination_column):
+            # Use red color for fee text if high fee
+            text_color = chart_font_color
+            if destination == _("fee") and self.is_high_fee:
+                text_color = "#ff4444"  # Red color for high fee
+                
             draw.text(
                 (recipients_text_x, destination_y),
                 text=destination,
                 font=font,
-                fill=chart_font_color,
+                fill=text_color,
                 anchor="lt"
             )
 
@@ -474,6 +480,7 @@ class PSBTMathScreen(ButtonListScreen):
     num_recipients: int = 0
     fee_amount: int = 0
     change_amount: int = 0
+    is_high_fee: bool = False
 
 
     def __post_init__(self):
@@ -532,7 +539,7 @@ class PSBTMathScreen(ButtonListScreen):
         # Draw each line of the equation
         cur_y = 0
 
-        def render_amount(cur_y, amount_str, info_text, info_text_color=GUIConstants.BODY_FONT_COLOR):
+        def render_amount(cur_y, amount_str, info_text, info_text_color=GUIConstants.BODY_FONT_COLOR, amount_color=GUIConstants.BODY_FONT_COLOR):
             secondary_digit_color = "#888"
             tertiary_digit_color = "#666"
             digit_group_spacing = 2 * ssf
@@ -548,11 +555,11 @@ class PSBTMathScreen(ButtonListScreen):
                 main_zone_width, th = right - left, bottom - top
                 left, top, right, bottom  = fixed_width_font.getbbox(end_zone)
                 mid_zone_width, th = right - left, bottom - top
-                draw.text((0, cur_y), text=main_zone, font=fixed_width_font, fill=GUIConstants.BODY_FONT_COLOR)
-                draw.text((main_zone_width + digit_group_spacing, cur_y), text=mid_zone, font=fixed_width_font, fill=secondary_digit_color)
-                draw.text((main_zone_width + digit_group_spacing + mid_zone_width + digit_group_spacing, cur_y), text=end_zone, font=fixed_width_font, fill=tertiary_digit_color)
+                draw.text((0, cur_y), text=main_zone, font=fixed_width_font, fill=amount_color)
+                draw.text((main_zone_width + digit_group_spacing, cur_y), text=mid_zone, font=fixed_width_font, fill=secondary_digit_color if amount_color == GUIConstants.BODY_FONT_COLOR else amount_color)
+                draw.text((main_zone_width + digit_group_spacing + mid_zone_width + digit_group_spacing, cur_y), text=end_zone, font=fixed_width_font, fill=tertiary_digit_color if amount_color == GUIConstants.BODY_FONT_COLOR else amount_color)
             else:
-                draw.text((0, cur_y), text=amount_str, font=fixed_width_font, fill=GUIConstants.BODY_FONT_COLOR)
+                draw.text((0, cur_y), text=amount_str, font=fixed_width_font, fill=amount_color)
             draw.text((digits_width + 3*digit_group_spacing, cur_y), text=info_text, font=body_font, fill=info_text_color)
 
         render_amount(
@@ -572,10 +579,15 @@ class PSBTMathScreen(ButtonListScreen):
             )
 
         cur_y += digits_height + GUIConstants.BODY_LINE_SPACING * ssf
+        # Use red color for fee if high fee
+        fee_color = "#ff4444" if self.is_high_fee else GUIConstants.BODY_FONT_COLOR
+        fee_text_color = "#ff4444" if self.is_high_fee else GUIConstants.BODY_FONT_COLOR
         render_amount(
             cur_y,
             f"-{self.fee_amount}",
             info_text=_("fee"),
+            info_text_color=fee_text_color,
+            amount_color=fee_color,
         )
 
         cur_y += digits_height + GUIConstants.BODY_LINE_SPACING * ssf

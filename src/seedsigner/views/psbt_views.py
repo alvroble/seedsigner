@@ -137,6 +137,11 @@ class PSBTOverviewView(View):
         if self.loading_screen:
             self.loading_screen.stop()
 
+        # Calculate if fee is high
+        total_output_value_excluding_change = psbt_parser.get_total_output_value()
+        is_high_fee = (total_output_value_excluding_change > 0 and 
+                      psbt_parser.fee_amount > self.HIGH_FEES_WARNING_THRESHOLD/100 * total_output_value_excluding_change)
+
         # Run the overview screen
         selected_menu_num = self.run_screen(
             PSBTOverviewScreen,
@@ -148,13 +153,12 @@ class PSBTOverviewView(View):
             num_change_outputs=num_change_outputs,
             destination_addresses=psbt_parser.destination_addresses,
             has_op_return=psbt_parser.op_return_data is not None,
+            is_high_fee=is_high_fee,
         )
 
         if selected_menu_num == RET_CODE__BACK_BUTTON:
             self.controller.psbt_seed = None
             return Destination(BackStackView)
-
-        total_output_value_excluding_change = psbt_parser.get_total_output_value()
 
         # expecting p2sh (legacy multisig) and p2pkh to have no policy set
         # skip change warning and psbt math view
@@ -163,7 +167,7 @@ class PSBTOverviewView(View):
 
         # High Fee warning if fee amount > <HIGH_FEES_WARNING_THRESHOLD> % of total outputs excluding change
         # Skip the warning when there is no output other than change
-        elif total_output_value_excluding_change > 0 and psbt_parser.fee_amount > self.HIGH_FEES_WARNING_THRESHOLD/100 * (total_output_value_excluding_change):
+        elif is_high_fee:
             return Destination(PSBTHighFeeWarningView, view_args={"warning_threshold_percent": self.HIGH_FEES_WARNING_THRESHOLD})
         
         elif psbt_parser.change_amount == 0:
@@ -255,12 +259,19 @@ class PSBTMathView(View):
         -------------------
         + change value
     """
+    HIGH_FEES_WARNING_THRESHOLD = 25 # in percent
+
     def run(self):
         from seedsigner.gui.screens.psbt_screens import PSBTMathScreen
         psbt_parser: PSBTParser = self.controller.psbt_parser
         if not psbt_parser:
             # Should not be able to get here
             return Destination(MainMenuView)
+        
+        # Calculate if fee is high
+        total_output_value_excluding_change = psbt_parser.get_total_output_value()
+        is_high_fee = (total_output_value_excluding_change > 0 and 
+                      psbt_parser.fee_amount > self.HIGH_FEES_WARNING_THRESHOLD/100 * total_output_value_excluding_change)
         
         selected_menu_num = self.run_screen(
             PSBTMathScreen,
@@ -270,6 +281,7 @@ class PSBTMathView(View):
             num_recipients=psbt_parser.num_destinations,
             fee_amount=psbt_parser.fee_amount,
             change_amount=psbt_parser.change_amount,
+            is_high_fee=is_high_fee,
         )
 
         if selected_menu_num == RET_CODE__BACK_BUTTON:
