@@ -193,10 +193,20 @@ def sign_message(seed_bytes: bytes, derivation: str, msg: bytes, compressed: boo
 
     root = bip32.HDKey.from_seed(seed_bytes, version=NETWORKS[embit_network]["xprv"])
     prv = root.derive(derivation).key
-    sig = secp256k1.ecdsa_sign_recoverable(msghash, prv._secret)
-    flag = sig[64]
-    sig = ec.Signature(sig[:64])
-    c = 4 if compressed else 0
-    flag = bytes([27 + flag + c])
-    ser = flag + secp256k1.ecdsa_signature_serialize_compact(sig._sig)
-    return b2a_base64(ser).strip().decode()
+
+    path_details = parse_derivation_path(derivation)
+    is_taproot = path_details.get("script_type") == SettingsConstants.TAPROOT
+    
+    if is_taproot:
+        keypair = secp256k1.keypair_create(prv._secret)
+        sig = secp256k1.schnorrsig_sign(msghash, keypair)
+        return b2a_base64(sig).strip().decode()
+    
+    else:
+        sig = secp256k1.ecdsa_sign_recoverable(msghash, prv._secret)
+        flag = sig[64]
+        sig = ec.Signature(sig[:64])
+        c = 4 if compressed else 0
+        flag = bytes([27 + flag + c])
+        ser = flag + secp256k1.ecdsa_signature_serialize_compact(sig._sig)
+        return b2a_base64(ser).strip().decode()
