@@ -59,6 +59,12 @@ class GUIConstants:
         SettingsConstants.LOCALE__THAI: "NotoSansTH-Regular",
     }
 
+    # RTL (Right-to-Left) languages that require right justification
+    RTL_LOCALES = {
+        SettingsConstants.LOCALE__ARABIC,
+        SettingsConstants.LOCALE__PERSIAN,
+    }
+
     TOP_NAV_TITLE_FONT_NAME = BASE_LOCALE_FONTS.copy()
     TOP_NAV_TITLE_FONT_NAME["default"] = "OpenSans-SemiBold"
     TOP_NAV_TITLE_FONT_SIZE = {
@@ -163,6 +169,22 @@ class GUIConstants:
         else:
             return GUIConstants.BUTTON_FONT_SIZE["default"]
 
+    @staticmethod
+    def is_rtl_locale(locale=None):
+        """
+        Check if the given locale (or current locale) is a Right-to-Left language.
+        
+        Args:
+            locale: Language code to check. If None, uses current locale from settings.
+            
+        Returns:
+            True if the locale is RTL, False otherwise.
+        """
+        if not locale:
+            locale = Settings.get_instance().get_value(SettingsConstants.SETTING__LOCALE)
+        
+        return locale in GUIConstants.RTL_LOCALES
+
 
 
 class FontAwesomeIconConstants:
@@ -257,8 +279,13 @@ def calc_text_centering(font: ImageFont,
                         total_width: int,
                         total_height: int,
                         start_x: int = 0,
-                        start_y: int = 0) -> Tuple[int, int]:
+                        start_y: int = 0,
+                        is_rtl_text: bool = None) -> Tuple[int, int]:
     # see: https://pillow.readthedocs.io/en/stable/handbook/text-anchors.html#text-anchors
+
+    # Auto-detect RTL if not explicitly set
+    if is_rtl_text is None:
+        is_rtl_text = GUIConstants.is_rtl_locale()
 
     # Gap between the starting coordinate and the first marking.
     offset_x, offset_y = font.getoffset(text)
@@ -277,7 +304,10 @@ def calc_text_centering(font: ImageFont,
     if is_text_centered:
         text_x = int((total_width - (box_right - offset_x)) / 2) - offset_x
     else:
-        text_x = GUIConstants.COMPONENT_PADDING
+        if is_rtl_text:
+            text_x = total_width - GUIConstants.COMPONENT_PADDING
+        else:
+            text_x = GUIConstants.COMPONENT_PADDING
 
     text_y = int((total_height - (ascent - offset_y)) / 2) - offset_y
 
@@ -388,6 +418,7 @@ class TextArea(BaseComponent):
     font_color: str = GUIConstants.BODY_FONT_COLOR
     edge_padding: int = GUIConstants.EDGE_PADDING
     is_text_centered: bool = True
+    is_rtl_text: bool = None  # None = auto-detect from locale, True = force RTL, False = force LTR
     supersampling_factor: int = 2  # 1 = disabled; 2 = default, double sample (4px square rendered for 1px)
     auto_line_break: bool = True
     allow_text_overflow: bool = False
@@ -410,6 +441,10 @@ class TextArea(BaseComponent):
             self.font_name = GUIConstants.get_body_font_name()
         if not self.font_size:
             self.font_size = GUIConstants.get_body_font_size()
+
+        # Auto-detect RTL if not explicitly set
+        if self.is_rtl_text is None:
+            self.is_rtl_text = GUIConstants.is_rtl_locale()
 
         super().__post_init__()
 
@@ -459,6 +494,7 @@ class TextArea(BaseComponent):
                 font_name=self.font_name,
                 font_size=self.font_size,
                 allow_text_overflow=self.allow_text_overflow,
+                is_rtl_text=self.is_rtl_text,
             )
 
             # Other components, like IconTextLine will need to know how wide the actual
@@ -553,11 +589,16 @@ class TextArea(BaseComponent):
             # middle baseline
             anchor = "ms"
         else:
-            # left baseline
-            anchor = "ls"
+            # left baseline for LTR, right baseline for RTL
+            anchor = "rs" if self.is_rtl_text else "ls"
 
-        # Default, not-centered text will be relative to its left-justified starting point
-        text_x = max([self.edge_padding, self.min_text_x])
+        # Default, not-centered text will be relative to its starting point
+        if self.is_rtl_text and not self.is_text_centered:
+            # RTL text starts from the right edge
+            text_x = self.width - self.edge_padding
+        else:
+            # LTR text starts from the left edge
+            text_x = max([self.edge_padding, self.min_text_x])
 
         for line in self.text_lines:
             if self.is_text_centered:
@@ -1366,6 +1407,7 @@ class Button(BaseComponent):
     outline_color: str = None
     selected_outline_color: str = None
     is_text_centered: bool = True
+    is_rtl_text: bool = None  # None = auto-detect from locale, True = force RTL, False = force LTR
     is_selected: bool = False
     is_scrollable_text: bool = True  # True: active state will automatically scroll if necessary, text is rendered once (not dynamic)
 
@@ -1376,6 +1418,10 @@ class Button(BaseComponent):
         
         if not self.font_size:
             self.font_size = GUIConstants.get_button_font_size()
+        
+        # Auto-detect RTL if not explicitly set
+        if self.is_rtl_text is None:
+            self.is_rtl_text = GUIConstants.is_rtl_locale()
         
         super().__post_init__()
 
@@ -1500,6 +1546,7 @@ class Button(BaseComponent):
                 height=self.text_height if self.icon_name and not self.is_icon_inline else self.height,
                 min_text_x=self.text_x if self.icon_name and self.is_icon_inline else GUIConstants.COMPONENT_PADDING,
                 is_text_centered=self.is_text_centered,
+                is_rtl_text=self.is_rtl_text,
                 height_ignores_below_baseline=True,  # Consistently vertically center text, ignoring chars that render below baseline (e.g. "pqyj")
                 horizontal_scroll_speed=30,  #px per sec
                 horizontal_scroll_begin_hold_secs=0.5,
@@ -1822,7 +1869,8 @@ def reflow_text_for_width(text: str,
                           width: int,
                           font_name=GUIConstants.get_body_font_name(),
                           font_size=GUIConstants.get_body_font_size(),
-                          allow_text_overflow: bool=False) -> list[dict]:
+                          allow_text_overflow: bool=False,
+                          is_rtl_text: bool=None) -> list[dict]:
     """
     Reflows text to fit within `width` by breaking long lines up.
 
@@ -1831,6 +1879,10 @@ def reflow_text_for_width(text: str,
     Note: It is up to the calling code to handle any height considerations for the 
     resulting lines of text.
     """
+    # Auto-detect RTL if not explicitly set
+    if is_rtl_text is None:
+        is_rtl_text = GUIConstants.is_rtl_locale()
+    
     # We have to figure out if and where to make line breaks in the text so that it
     #   fits in its bounding rect (plus accounting for edge padding) using its given
     #   font.
@@ -1852,7 +1904,7 @@ def reflow_text_for_width(text: str,
     # Stores each line of text and its rendering starting x-coord
     text_lines = []
     def _add_text_line(text, text_width, px_below_baseline):
-        text_lines.append(dict(text=text, text_width=text_width, px_below_baseline=px_below_baseline))
+        text_lines.append(dict(text=text, text_width=text_width, px_below_baseline=px_below_baseline, is_rtl_text=is_rtl_text))
 
     if "\n" not in text and full_text_width < width:
         # The whole text fits on one line
@@ -1934,7 +1986,8 @@ def reflow_text_into_pages(text: str,
                            font_name=GUIConstants.get_body_font_name(),
                            font_size=GUIConstants.get_body_font_size(),
                            line_spacer: int = GUIConstants.BODY_LINE_SPACING,
-                           allow_text_overflow: bool=False) -> list[str]:
+                           allow_text_overflow: bool=False,
+                           is_rtl_text: bool=None) -> list[str]:
     """
     Invokes `reflow_text_for_width` above to convert long text into width-limited
     individual text lines and then calculates how many lines will fit on a "page" and
@@ -1946,7 +1999,8 @@ def reflow_text_into_pages(text: str,
                                            width=width,
                                            font_name=font_name,
                                            font_size=font_size,
-                                           allow_text_overflow=allow_text_overflow)
+                                           allow_text_overflow=allow_text_overflow,
+                                           is_rtl_text=is_rtl_text)
 
     lines = []
     for line_dict in reflowed_lines_dicts:
