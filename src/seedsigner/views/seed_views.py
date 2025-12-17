@@ -2509,15 +2509,22 @@ class SeedShamirShareOptionsView(View):
                 self.controller.storage.convert_pending_shamir_share_set_to_pending_seed(finalize=False)
             except InvalidSeedException:
                 logger.exception("Pending Shamir share set unexpectedly failed to reconstruct despite eligibility.")
-                return Destination(
-                        SeedShamirShareOptionsView,
-                        view_args={
-                            "can_finalize": self.can_finalize,
-                            "share_threshold": self.share_threshold,
-                            "share_count": self.share_count
-                        }
-                    )
+                return Destination(SeedShamirReconstructionErrorView)
             return Destination(SeedShamirShareFinalizeView)
+
+
+
+class SeedShamirReconstructionErrorView(View):
+    def run(self):
+        self.run_screen(
+            DireWarningScreen,
+            title=_("Reconstruction Error"),
+            status_headline=_("Invalid Share Set"),
+            status_icon_name=SeedSignerIconConstants.ERROR,
+            text=_("Unable to reconstruct seed from the provided shares."),
+            show_back_button=True,
+        )
+        return Destination(BackStackView)
 
 
 
